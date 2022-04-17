@@ -9,7 +9,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--condition", type=str, help="A dictionary contains conditions that the experiment results need to fulfill (e.g., tag, task_name, few_shot_type)")
     parser.add_argument('--template_dir', type=str, help='Template directory')
-
+    parser.add_argument("--name", type=str, default='')
     # These options should be kept as their default values
     parser.add_argument("--k", type=int, default=16)
     parser.add_argument("--log", type=str, default="log", help="Log path.")
@@ -123,6 +123,11 @@ def main():
             args.key = 'mpqa_dev_eval_acc'
             args.test_key = 'mpqa_test_eval_acc'
             print_name = condition['task_name']
+        elif condition['task_name'] == 'spoilers':
+            args.key = 'spoilers_dev_eval_auroc'
+            args.test_key = 'spoilers_test_eval_auroc'
+            args.test_key2 = 'spoilers_test_eval_recall'
+            print_name = args.name if len(args.name) > 0 else condition['task_name']
         else:
             raise NotImplementedError
 
@@ -140,7 +145,7 @@ def main():
             if cond not in item or item[cond] != condition[cond]:
                 ok = False
                 break
-        
+
         if ok:
             seed = item['seed']
             if seed not in seed_result:
@@ -150,7 +155,7 @@ def main():
                 if item['template_id'] not in seed_result_template_id[seed]:
                     seed_result[seed].append(item)
                     seed_result_template_id[seed][item['template_id']] = 1
-
+    
     for seed in seed_result:
         print("Seed %d has %d results" % (seed, len(seed_result[seed])))
 

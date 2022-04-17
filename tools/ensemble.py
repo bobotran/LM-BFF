@@ -9,6 +9,7 @@ from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTok
 from transformers import GlueDataTrainingArguments, glue_compute_metrics
 from transformers.data.metrics import simple_accuracy
 from transformers.data.processors.glue import glue_processors
+import torchmetrics
 
 def get_glue_label(task, line):
     if task in ["MNLI", "MRPC", "QNLI", "QQP", "RTE", "SNLI", "SST-2", "STS-B", "WNLI", "CoLA"]:
@@ -39,7 +40,7 @@ def get_glue_label(task, line):
         raise NotImplementedError
 
 def get_labels(data_dir, k, seed, task, print_name):
-    if print_name in ['sst-5', 'mr', 'cr', 'mpqa', 'subj', 'trec']:
+    if print_name in ['sst-5', 'mr', 'cr', 'mpqa', 'subj', 'trec', 'spoilers']:
         data = pd.read_csv(os.path.join(data_dir, print_name, '{}-{}'.format(k, seed), 'test.csv'), header=None).values.tolist()
         labels = np.zeros((len(data)), dtype=np.uint8)
         for i, example in enumerate(data):
@@ -61,10 +62,10 @@ def get_labels(data_dir, k, seed, task, print_name):
         label_map = {k: i for i, k in enumerate(label_list)}
         if task == 'sts-b':
             label_map = {0: 0, 1: 1}
-        label_ids = np.zeros((len(lines)))
+        labels = np.zeros((len(lines)))
         for line_id, line in enumerate(lines):
-            label_ids[line_id] = label_map[get_glue_label(print_name, line)]
-    return label_ids
+            labels[line_id] = label_map[get_glue_label(print_name, line)]
+    return labels
 
 def main():
     parser = argparse.ArgumentParser()
@@ -73,7 +74,7 @@ def main():
     parser.add_argument("--condition", type=str, help="A dictionary contains conditions that the experiment results need to fulfill (e.g., tag, task_name, few_shot_type)")
     
     # These options should usually be kept as their default values
-    parser.add_argument("--data_dir", type=str, default="data/k-shot", help="Data directory")
+    parser.add_argument("--data_dir", type=str, default="data/k-shot-10x", help="Data directory")
     parser.add_argument("--save_logit_dir", type=str, default="ensemble_predict_results", help="Directory to store the logit file.")
     parser.add_argument("--log", type=str, default="log", help="Log path.")
     parser.add_argument("--key", type=str, default='', help="Validation metric name")
@@ -163,6 +164,10 @@ def main():
         elif condition['task_name'] == 'mpqa':
             args.key = 'mpqa_dev_eval_acc'
             args.test_key = 'mpqa_test_eval_acc'
+        elif condition['task_name'] == 'spoilers':
+            args.key = 'spoilers_dev_eval_auroc'
+            args.test_key = 'spoilers_test_eval_auroc'
+            args.test_key2 = 'spoilers_test_eval_recall'
         else:
             raise NotImplementedError
 
@@ -248,7 +253,8 @@ def main():
         'cr': 'cr',
         'mpqa': 'mpqa',
         'subj': 'subj',
-        'trec': 'trec'
+        'trec': 'trec',
+        'spoilers': 'spoilers'
     }
 
     tokenizer = AutoTokenizer.from_pretrained('roberta-large')
@@ -271,7 +277,13 @@ def main():
         
         # Compute metrics
         preds = mean_logits.argmax(-1)
-        if condition['task_name'] in ['sst-5', 'mr', 'cr', 'mpqa', 'subj', 'trec']:
+        if condition['task_name'] == 'spoilers':
+            preds, labels = torch.Tensor(preds), torch.Tensor(labels).type(torch.int)
+            auroc = torchmetrics.functional.auroc(preds, labels, pos_label=1).item()
+            recall = torchmetrics.functional.recall(preds, labels, num_classes=1).item()
+            f1 = torchmetrics.functional.f1_score(preds, labels, num_classes=1).item()
+            metric = {"auroc": auroc, "recall": recall, "f1":f1}
+        elif condition['task_name'] in ['sst-5', 'mr', 'cr', 'mpqa', 'subj', 'trec']:
             metric = {"acc": simple_accuracy(preds, labels)}
         else:
             metric = glue_compute_metrics(condition['task_name'], preds, labels)

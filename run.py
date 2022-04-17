@@ -503,6 +503,9 @@ def main():
             
             if num_logits == 1:
                 preds = np.squeeze(logits)
+            elif task_name == 'spoilers':
+                preds = torch.nn.functional.softmax(torch.Tensor(logits), dim=1)
+                preds = preds[:,1]
             else:
                 preds = np.argmax(logits, axis=1)
 

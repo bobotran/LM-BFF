@@ -22,6 +22,7 @@ from sentence_transformers import SentenceTransformer, util
 from copy import deepcopy
 import pandas as pd
 import logging
+import torchmetrics
 
 logger = logging.getLogger(__name__)
 
@@ -505,6 +506,8 @@ class TextClassificationProcessor(DataProcessor):
             return list(range(2))
         elif self.task_name == "mpqa":
             return list(range(2))
+        elif self.task_name == "spoilers":
+            return list(range(2))
         else:
             raise Exception("task_name not supported.")
         
@@ -524,7 +527,7 @@ class TextClassificationProcessor(DataProcessor):
                 if not pd.isna(line[3]):
                     text += ' ' + line[3]
                 examples.append(InputExample(guid=guid, text_a=text, short_text=line[1], label=line[0])) 
-            elif self.task_name in ['mr', 'sst-5', 'subj', 'trec', 'cr', 'mpqa']:
+            elif self.task_name in ['mr', 'sst-5', 'subj', 'trec', 'cr', 'mpqa', 'spoilers']:
                 examples.append(InputExample(guid=guid, text_a=line[1], label=line[0]))
             else:
                 raise Exception("Task_name not supported.")
@@ -532,7 +535,14 @@ class TextClassificationProcessor(DataProcessor):
         return examples
         
 def text_classification_metrics(task_name, preds, labels):
-    return {"acc": (preds == labels).mean()}
+    if task_name == 'spoilers':
+        preds, labels = torch.Tensor(preds), torch.Tensor(labels).type(torch.int)
+        auroc = torchmetrics.functional.auroc(preds, labels, pos_label=1).item()
+        recall = torchmetrics.functional.recall(preds, labels, num_classes=1).item()
+        f1 = torchmetrics.functional.f1_score(preds, labels, num_classes=1).item()
+        return {"auroc": auroc, "recall": recall, "f1":f1}
+    else:
+        return {"acc": (preds == labels).mean()}
 
 # Add your task to the following mappings
 
@@ -553,7 +563,8 @@ processors_mapping = {
     "subj": TextClassificationProcessor("subj"),
     "trec": TextClassificationProcessor("trec"),
     "cr": TextClassificationProcessor("cr"),
-    "mpqa": TextClassificationProcessor("mpqa")
+    "mpqa": TextClassificationProcessor("mpqa"),
+    "spoilers": TextClassificationProcessor("spoilers")
 }
 
 num_labels_mapping = {
@@ -572,7 +583,8 @@ num_labels_mapping = {
     "subj": 2,
     "trec": 6,
     "cr": 2,
-    "mpqa": 2
+    "mpqa": 2,
+    "spoilers": 2
 }
 
 output_modes_mapping = {
@@ -592,7 +604,8 @@ output_modes_mapping = {
     "subj": "classification",
     "trec": "classification",
     "cr": "classification",
-    "mpqa": "classification"
+    "mpqa": "classification",
+    "spoilers": "classification"
 }
 
 # Return a function that takes (task_name, preds, labels) as inputs
@@ -614,6 +627,7 @@ compute_metrics_mapping = {
     "trec": text_classification_metrics,
     "cr": text_classification_metrics,
     "mpqa": text_classification_metrics,
+    "spoilers": text_classification_metrics
 }
 
 # For regression task only: median

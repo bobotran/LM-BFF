@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The Trainer class, to easily train a 🤗 Transformers from scratch or finetune it on a new task.
+The Trainer class, to easily train a ðŸ¤— Transformers from scratch or finetune it on a new task.
 """
 
 import collections
@@ -160,6 +160,8 @@ def default_dev_objective(metrics):
         return metrics["eval_mnli/acc"]
     elif "eval_mnli-mm/acc" in metrics:
         return metrics["eval_mnli-mm/acc"]
+    elif "eval_auroc" in metrics:
+        return metrics["eval_auroc"]
     elif "eval_f1" in metrics:
         return metrics["eval_f1"]
     elif "eval_mcc" in metrics:

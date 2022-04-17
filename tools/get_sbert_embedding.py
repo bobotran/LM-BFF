@@ -6,7 +6,7 @@ from tqdm import tqdm
 import pandas as pd
 
 def get_sentence(task, line):
-    if task in ['mr', 'sst-5', 'subj', 'trec', 'cr', 'mpqa']:
+    if task in ['mr', 'sst-5', 'subj', 'trec', 'cr', 'mpqa', 'spoilers']:
         # Text classification tasks
         if line[1] is None or pd.isna(line[1]):
             return ''
@@ -58,7 +58,7 @@ def load_datasets(data_dir, task, do_test=False):
         if do_test:
             splits.append('test')
     for split in splits:
-        if task in ['mr', 'sst-5', 'subj', 'trec', 'cr', 'mpqa']:
+        if task in ['mr', 'sst-5', 'subj', 'trec', 'cr', 'mpqa', 'spoilers']:
             filename = os.path.join(data_dir, f"{split}.csv")
             dataset[split] = pd.read_csv(filename, header=None).values.tolist()
         else:
@@ -75,7 +75,7 @@ def main():
     parser.add_argument("--sbert_model", type=str, default='roberta-large', help="Sentence BERT model name")
 
     parser.add_argument("--k", type=int, help="Number of training instances per label", default=16)
-    parser.add_argument("--data_dir", type=str, default="data/k-shot", help="Path to few-shot data")
+    parser.add_argument("--data_dir", type=str, default="data/k-shot-10x", help="Path to few-shot data")
     parser.add_argument("--seed", type=int, nargs="+", default=[42, 13, 21, 87, 100], help="Seeds for data splits")
     parser.add_argument("--task", type=str, nargs="+", default=["SST-2", "sst-5", "mr", "cr", "mpqa", "subj", "trec", "CoLA", "MRPC", "QQP", "STS-B", "MNLI", "SNLI", "QNLI", "RTE"], help="Tasks")
 

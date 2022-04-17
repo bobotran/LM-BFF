@@ -4,10 +4,10 @@ set -ex
 K=16
 
 # Data directory for k-shot splits.
-DATA_DIR="data/k-shot"
+DATA_DIR="data/k-shot-10x"
 
 # Output directory where results will be written.
-OUTPUT_DIR="my_auto_label_mapping"
+OUTPUT_DIR="spoilers_auto_label_mapping"
 
 # Pre-trained model name (roberta-*, bert-*), see Transformers.
 MODEL_NAME="roberta-large"
@@ -16,9 +16,10 @@ MODEL_NAME="roberta-large"
 # generate automatic labels. Finally we will train all auto template X auto labels and
 # select the best (based on dev). If we are doing this, then we must specify the auto T
 # results, and load the top n per result.
-LOAD_TEMPLATES="false"
-TEMPLATE_DIR="auto_template/"
-NUM_TEMPLATES=10
+LOAD_TEMPLATES="true"
+TEMPLATE_DIR="spoilers_auto_template"
+TEMPLATE_NAME="yes_no"
+NUM_TEMPLATES=20
 
 # Filter options to top K words (conditional) per class.
 K_LIKELY=100
@@ -29,9 +30,10 @@ K_NEIGHBORS=30
 # How many label mappings per template to keep at the end.
 N_PAIRS=100
 
-TASKS="SST-2"
+TASKS="spoilers"
 
-SEEDS="100 13 21 42 87"
+# SEEDS="100 13 21 42 87"
+SEEDS="21"
 
 TASK_EXTRA=""
 
@@ -107,10 +109,14 @@ for TASK in $TASKS; do
                 MAPPING="{0:'terrible',1:'great'}"
                 TASK_EXTRA="--first_sent_limit 110"
                 ;;
+            spoilers)
+                TEMPLATE="*cls**sent_0*._Spoiler?*mask*.*sep+*"
+                MAPPING="{0:'No',1:'Yes'}"
+                ;;
         esac
 
         if [[ $LOAD_TEMPLATES = "true" ]]; then
-            FILENAME=$TEMPLATE_DIR/${TASK}/$K-${SEED}.sort.txt
+            FILENAME=$TEMPLATE_DIR/${TEMPLATE_NAME}/$K-${SEED}.sort.txt
             for TEMPLATE in $(head -n $NUM_TEMPLATES $FILENAME); do
                 python tools/generate_labels.py \
                        --overwrite_output_dir \
@@ -135,7 +141,7 @@ for TASK in $TASKS; do
                    --overwrite_output_dir \
                    --output_dir /tmp/output \
                    --model_name_or_path $MODEL_NAME \
-                   --output_file $OUTPUT_DIR//manual_template/$TASK/$K-$SEED.txt \
+                   --output_file $OUTPUT_DIR/manual_template/$TASK/$K-$SEED.txt \
                    --template $TEMPLATE \
                    --mapping $MAPPING \
                    --task_name $TASK \

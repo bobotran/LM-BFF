@@ -98,6 +98,10 @@ def main():
         elif condition['task_name'] == 'mpqa':
             args.key = 'mpqa_dev_eval_acc'
             args.test_key = 'mpqa_test_eval_acc'
+        elif condition['task_name'] == 'spoilers':
+            args.key = 'spoilers_dev_eval_auroc'
+            args.test_key = 'spoilers_test_eval_auroc'
+            args.test_key2 = 'spoilers_test_eval_recall'
         else:
             raise NotImplementedError
 
@@ -147,7 +151,7 @@ def main():
             len(seed_result[seed])
         ))
         s = ''
-        for k in ['per_device_train_batch_size', 'gradient_accumulation_steps', 'learning_rate', 'eval_steps', 'max_steps']:
+        for k in ['gradient_accumulation_steps', 'learning_rate', 'per_device_train_batch_size', 'eval_steps', 'max_steps']:
             s += '| {}: {} '.format(k, seed_best[seed][k])
         print('    ' + s)
 

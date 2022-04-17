@@ -143,7 +143,7 @@ def generate(dataset, template, model, tokenizer, target_number, mapping, beam, 
             decoder_input_ids = item['decoder_input_ids']
 
             # Forward
-            batch_size = 32
+            batch_size = 16
             turn = input_ids.size(0) // batch_size
             if input_ids.size(0) % batch_size != 0:
                 turn += 1
@@ -283,7 +283,8 @@ def search_template(model, tokenizer, task_name, k, seed, beam, output_dir, data
         'MNLI': {'contradiction':'No','entailment':'Yes','neutral':'Maybe'},
         'SNLI': {'contradiction':'No','entailment':'Yes','neutral':'Maybe'},
         'QNLI': {'not_entailment':'No','entailment':'Yes'},
-        'RTE': {'not_entailment':'No','entailment':'Yes'}
+        'RTE': {'not_entailment':'No','entailment':'Yes'},
+        'spoilers': {0:'No',1:'Yes'},
     }
 
     mapping = map_of_mapping[task_name]
@@ -294,7 +295,7 @@ def search_template(model, tokenizer, task_name, k, seed, beam, output_dir, data
     os.makedirs(os.path.join(output_dir, task_name), exist_ok=True)
     f = open(os.path.join(output_dir, task_name, "{}-{}.txt".format(k, seed)), 'w')
 
-    if task_name in ['SST-2', 'sst-5', 'mr', 'cr', 'subj', 'trec', 'CoLA', 'mpqa']:
+    if task_name in ['SST-2', 'sst-5', 'mr', 'cr', 'subj', 'trec', 'CoLA', 'mpqa', 'spoilers']:
         # Single sentence tasks
         # We take two kinds of templates: put [MASK] at the beginning or the end
         template = "*cls**sentu_0**<extra_id_0>**label**<extra_id_1>**sep+*"
@@ -307,7 +308,7 @@ def search_template(model, tokenizer, task_name, k, seed, beam, output_dir, data
             text = text.replace('<extra_id_1>', '*mask*')
             text = text.replace('<extra_id_2>', '*sep+*')
             text = text.replace('</s>', '*sep+*')
-            text = text.replace('▁', '_')
+            text = text.replace('â', '_')
             print(text)
             f.write(text + '\n')
         print("####### generated templates #######\n")
@@ -321,7 +322,7 @@ def search_template(model, tokenizer, task_name, k, seed, beam, output_dir, data
             text = text.replace('<extra_id_1>', '*mask*')
             text = text.replace('<extra_id_2>', '*+sent_0**sep+*')
             text = text.replace('</s>', '*+sent_0**sep+*')
-            text = text.replace('▁', '_')
+            text = text.replace('â', '_')
             print(text)
             f.write(text + '\n')
         print("####### generated templates #######\n")
@@ -338,7 +339,7 @@ def search_template(model, tokenizer, task_name, k, seed, beam, output_dir, data
             text = text.replace('<extra_id_1>', '*mask*')
             text = text.replace('<extra_id_2>', '*+sentl_1**sep+*')
             text = text.replace('</s>', '*+sentl_1**sep+*')
-            text = text.replace('▁', '_')
+            text = text.replace('â', '_')
             print(text)
             f.write(text + '\n')
         print("####### generated templates #######\n")
@@ -353,7 +354,7 @@ def main():
     parser.add_argument('--task_name', type=str, nargs='+', default=['SST-2', 'sst-5', 'mr', 'cr', 'subj', 'trec', 'CoLA', 'MRPC', 'QQP', 'STS-B', 'MNLI', 'SNLI', 'QNLI', 'RTE'], help="Task names")
     parser.add_argument('--output_dir', type=str, default='Output directory')
 
-    parser.add_argument('--data_dir', type=str, default="data/k-shot", help="Data directory")
+    parser.add_argument('--data_dir', type=str, default="data/k-shot-10x", help="Data directory")
     parser.add_argument('--beam', type=int, default=100, help="Beam search width")
     parser.add_argument('--k', type=int, default=16, help="Number of training instances per label")
  

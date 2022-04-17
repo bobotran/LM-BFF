@@ -93,19 +93,22 @@ case $TASK in
         MAPPING="{0:'terrible',1:'great'}"
         TASK_EXTRA="--first_sent_limit 110  --double_demo"
         ;;
-
+    spoilers)
+        TEMPLATE="*cls**sent_0*._Spoiler?*mask*.*sep+*"
+        MAPPING="{0:'No',1:'Yes'}"
+        ;;
 esac
 
 # Gradient accumulation steps
 # For medium-sized GPUs (e.g., 2080ti with 10GB memory), they can only take 
 # a maximum batch size of 2 when using large-size models. So we use gradient
 # accumulation steps to achieve the same effect of larger batch sizes.
-REAL_BS=2
+REAL_BS=$BS
 GS=$(expr $BS / $REAL_BS)
 
 # Use a random number to distinguish different trails (avoid accidental overwriting)
 TRIAL_IDTF=$RANDOM
-DATA_DIR=data/k-shot/$TASK/$K-$SEED
+DATA_DIR=data/k-shot-10x/$TASK/$K-$SEED
 
 python run.py \
   --task_name $TASK \
@@ -127,7 +130,7 @@ python run.py \
   --logging_steps $EVAL_STEP \
   --eval_steps $EVAL_STEP \
   --num_train_epochs 0 \
-  --output_dir result/$TASK-$TYPE-$K-$SEED-$MODEL-$TRIAL_IDTF \
+  --output_dir result/$TAG-$TASK-$TYPE-$K-$SEED-$MODEL-$TRIAL_IDTF \
   --seed $SEED \
   --tag $TAG \
   --template $TEMPLATE \
@@ -138,4 +141,4 @@ python run.py \
 # Delete the checkpoint 
 # Since we need to run multiple trials, saving all the checkpoints takes 
 # a lot of storage space. You can find all evaluation results in `log` file anyway.
-rm -r result/$TASK-$TYPE-$K-$SEED-$MODEL-$TRIAL_IDTF \
+# rm -r result/$TASK-$TYPE-$K-$SEED-$MODEL-$TRIAL_IDTF \
