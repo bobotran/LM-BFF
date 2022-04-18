@@ -8,7 +8,7 @@
 # MODEL: pre-trained model name (roberta-*, bert-*), see Transformers model list
 
 # Number of training instances per label
-K=16
+K=250
 
 # Training steps
 MAX_STEP=1000
@@ -94,8 +94,8 @@ case $TASK in
         TASK_EXTRA="--first_sent_limit 110  --double_demo"
         ;;
     spoilers)
-        TEMPLATE="*cls**sent_0*._Spoiler?*mask*.*sep+*"
-        MAPPING="{0:'No',1:'Yes'}"
+        TEMPLATE="*cls**sent_0*._Relevant?*mask*.*sep+*"
+        MAPPING="{0:'Yes',1:'No'}"
         ;;
 esac
 
@@ -108,20 +108,23 @@ GS=$(expr $BS / $REAL_BS)
 
 # Use a random number to distinguish different trails (avoid accidental overwriting)
 TRIAL_IDTF=$RANDOM
-DATA_DIR=data/k-shot-10x/$TASK/$K-$SEED
+DATA_DIR=data/k-shot/$TASK/$K-$SEED
+
+CHECKPOINT=result/$TAG-$TASK-$TYPE-$K-$SEED-$MODEL
 
 python run.py \
+  --save_logit \
+  --save_logit_dir result/$TAG-$TASK-$TYPE-$K-$SEED-$MODEL \
   --task_name $TASK \
   --data_dir $DATA_DIR \
-  --overwrite_output_dir \
   --do_train \
-  --do_eval \
   --do_predict \
+  --do_eval \
   --evaluate_during_training \
   --model_name_or_path $MODEL \
   --few_shot_type $TYPE \
   --num_k $K \
-  --max_seq_length 128 \
+  --max_seq_length 512 \
   --per_device_train_batch_size $REAL_BS \
   --per_device_eval_batch_size 16 \
   --gradient_accumulation_steps $GS \
@@ -130,7 +133,7 @@ python run.py \
   --logging_steps $EVAL_STEP \
   --eval_steps $EVAL_STEP \
   --num_train_epochs 0 \
-  --output_dir result/$TAG-$TASK-$TYPE-$K-$SEED-$MODEL-$TRIAL_IDTF \
+  --output_dir result/$TAG-$TASK-$TYPE-$K-$SEED-$MODEL \
   --seed $SEED \
   --tag $TAG \
   --template $TEMPLATE \
@@ -141,4 +144,4 @@ python run.py \
 # Delete the checkpoint 
 # Since we need to run multiple trials, saving all the checkpoints takes 
 # a lot of storage space. You can find all evaluation results in `log` file anyway.
-# rm -r result/$TASK-$TYPE-$K-$SEED-$MODEL-$TRIAL_IDTF \
+# rm -r result/$TAG-$TASK-$TYPE-$K-$SEED-$MODEL \

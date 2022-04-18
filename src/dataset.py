@@ -228,6 +228,7 @@ def tokenize_multipart_input(
 
     # Truncate
     if len(input_ids) > max_length:
+        raise AssertionError('Input sequence too long')
         if truncate_head:
             input_ids = input_ids[-max_length:]
             attention_mask = attention_mask[-max_length:]

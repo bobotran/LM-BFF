@@ -447,7 +447,7 @@ def main():
 
     # Create tokenizer
     tokenizer = AutoTokenizer.from_pretrained(
-        model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
+        config._name_or_path if config._name_or_path else model_args.model_name_or_path,
         additional_special_tokens=special_tokens,
         cache_dir=model_args.cache_dir,
     )
@@ -580,6 +580,13 @@ def main():
                         logger.info("  %s = %s", key, value)
                         writer.write("%s = %s\n" % (key, value))
                         final_result[eval_dataset.args.task_name + '_dev_' + key] = value
+                        
+                if training_args.save_logit:
+                    predictions = output.predictions
+                    num_logits = predictions.shape[-1]
+                    logits = predictions.reshape([eval_dataset.num_sample, -1, num_logits]).mean(axis=0)
+                    np.save(os.path.join(training_args.save_logit_dir, "{}-{}-{}-eval.npy".format(eval_dataset.task_name, training_args.model_id, training_args.array_id)), logits)
+                
             eval_results.update(eval_result)
 
     test_results = {}
@@ -612,7 +619,7 @@ def main():
                     predictions = output.predictions
                     num_logits = predictions.shape[-1]
                     logits = predictions.reshape([test_dataset.num_sample, -1, num_logits]).mean(axis=0)
-                    np.save(os.path.join(training_args.save_logit_dir, "{}-{}-{}.npy".format(test_dataset.task_name, training_args.model_id, training_args.array_id)), logits)
+                    np.save(os.path.join(training_args.save_logit_dir, "{}-{}-{}-test.npy".format(test_dataset.task_name, training_args.model_id, training_args.array_id)), logits)
 
             test_results.update(test_result)
 
