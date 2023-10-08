@@ -1,5 +1,5 @@
 """Finetuning the library models for sequence classification on GLUE."""
-
+# TESTING EXTENSION
 import dataclasses
 import logging
 import os
@@ -60,6 +60,9 @@ class ModelArguments:
     random_segment: bool = field(
         default=False,
         metadata={"help": "Whether to reinitialize the token type embeddings (only for BERT)."}
+    )
+    resume_from: Optional[str] = field(
+        default=None, metadata={"help": "Checkpoint to load model parameters."}
     )
 
 @dataclass
@@ -468,13 +471,29 @@ def main():
     )
 
     set_seed(training_args.seed)
-
-    model = model_fn.from_pretrained(
-        model_args.model_name_or_path,
-        from_tf=bool(".ckpt" in model_args.model_name_or_path),
-        config=config,
-        cache_dir=model_args.cache_dir,
-    )
+    
+    def load_checkpoint(checkpoint):
+        model = model_fn.from_pretrained(checkpoint)
+        model = model.to(training_args.device)
+        if data_args.prompt:
+            model.label_word_list = torch.tensor(train_dataset.label_word_list).long().cuda()
+        if output_modes_mapping[data_args.task_name] == 'regression':
+            # lower / upper bounds
+            model.lb, model.ub = bound_mapping[data_args.task_name]
+        model.model_args = model_args
+        model.data_args = data_args
+        model.tokenizer = tokenizer
+        return model
+        
+    if model_args.resume_from:
+        model = load_checkpoint(model_args.resume_from)
+    else:
+        model = model_fn.from_pretrained(
+            model_args.model_name_or_path,
+            from_tf=bool(".ckpt" in model_args.model_name_or_path),
+            config=config,
+            cache_dir=model_args.cache_dir,
+        )
 
     # For BERT, increase the size of the segment (token type) embeddings
     if config.model_type == 'bert':
@@ -542,18 +561,8 @@ def main():
             torch.save(data_args, os.path.join(training_args.output_dir, "data_args.bin"))
         
         # Reload the best checkpoint (for eval)
-        model = model_fn.from_pretrained(training_args.output_dir)
-        model = model.to(training_args.device)
-        trainer.model = model
-        if data_args.prompt:
-            model.label_word_list = torch.tensor(train_dataset.label_word_list).long().cuda()
-        if output_modes_mapping[data_args.task_name] == 'regression':
-            # lower / upper bounds
-            model.lb, model.ub = bound_mapping[data_args.task_name]
-        model.model_args = model_args
-        model.data_args = data_args
-        model.tokenizer = tokenizer
-
+        trainer.model = load_checkpoint(training_args.output_dir)
+        
     # Evaluation
     final_result = {
         'time': str(datetime.today()),

@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The Trainer class, to easily train a ðŸ¤— Transformers from scratch or finetune it on a new task.
+The Trainer class, to easily train a Ã°Å¸Â¤â€” Transformers from scratch or finetune it on a new task.
 """
 
 import collections
@@ -400,6 +400,7 @@ class Trainer(transformers.Trainer):
                         logging_loss_scalar = tr_loss_scalar
 
                         self.log(logs)
+                        logger.info("Train loss: {}".format(logs["loss"]))
 
                     # ----------------------------------------------------------------------
                     # BEGIN CHANGES.

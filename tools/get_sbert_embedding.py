@@ -86,7 +86,7 @@ def main():
 
     for task in args.task:
         for seed in args.seed:
-            folder = os.path.join(args.data_dir, task, '{}-{}'.format(args.k, seed))
+            folder = args.data_dir
             dataset = load_datasets(folder, task, do_test=args.do_test)
             for split in dataset:
                 print('{}-{}-{}-{}'.format(task, args.k, seed, split))

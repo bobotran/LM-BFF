@@ -1,10 +1,10 @@
 MODEL=$1
-K=16
+K=3615
 
 python tools/get_sbert_embedding.py --sbert_model $MODEL --task spoilers
-python tools/get_sbert_embedding.py --sbert_model $MODEL --seed 42 --do_test --task spoilers
+python tools/get_sbert_embedding.py --sbert_model $MODEL --seed 21 --do_test --task spoilers
 
-for seed in 13 21 87 100
+for seed in 21
 do
     for task in spoilers
     do

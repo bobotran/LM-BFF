@@ -228,7 +228,8 @@ def tokenize_multipart_input(
 
     # Truncate
     if len(input_ids) > max_length:
-        raise AssertionError('Input sequence too long')
+        if prompt:
+            raise AssertionError('Input sequence too long')
         if truncate_head:
             input_ids = input_ids[-max_length:]
             attention_mask = attention_mask[-max_length:]
@@ -562,7 +563,7 @@ class FewShotDataset(torch.utils.data.Dataset):
             label_map = {'0': 0, '1': 1}
 
         # Get example's label id (for training/inference)
-        if example.label is None:
+        if example.label is None or example.label == -1:
             example_label = None
         elif len(label_list) == 1:
             # Regerssion

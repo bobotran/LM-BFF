@@ -172,7 +172,7 @@ def main():
         seed_result[seed].sort(key=lambda x: x[args.key], reverse=True)
         for item in seed_result[seed]:
             fsort.write(templates[item['template_id']] + '\n')
-            fscore.write("%.5f %s\n" % (item[args.key], templates[item['template_id']]))
+            fscore.write("%d %.5f %s\n" % (item['template_id'], item[args.key], templates[item['template_id']]))
 
 if __name__ == '__main__':
     main()

@@ -537,10 +537,11 @@ class TextClassificationProcessor(DataProcessor):
 def text_classification_metrics(task_name, preds, labels):
     if task_name == 'spoilers':
         preds, labels = torch.Tensor(preds), torch.Tensor(labels).type(torch.int)
+        ap = torchmetrics.functional.average_precision(preds, labels, num_classes=1, pos_label=1).item()
         auroc = torchmetrics.functional.auroc(preds, labels, pos_label=1).item()
         recall = torchmetrics.functional.recall(preds, labels, num_classes=1).item()
         f1 = torchmetrics.functional.f1_score(preds, labels, num_classes=1).item()
-        return {"auroc": auroc, "recall": recall, "f1":f1}
+        return {"ap": ap, "auroc": auroc, "recall": recall, "f1":f1}
     else:
         return {"acc": (preds == labels).mean()}
 
